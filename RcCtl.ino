@@ -12,7 +12,9 @@ void setup()
   dbgInit();
   Wire.begin(5,4);
   ads.begin();
+  pinMode(14, OUTPUT);  // LCD backlight standby
   delay(1000);
+  digitalWrite(14,HIGH);  // on
 }
 
 void loop() 
