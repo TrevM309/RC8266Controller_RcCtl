@@ -13,7 +13,7 @@ u16 BACK_COLOR;   //Background color
 ******************************************************************************/
 void LCD_Writ_Bus(u8 dat) 
 {
-  //SPI.beginTransaction(SPISettings(12000000, MSBFIRST, SPI_MODE2));
+  //SPI.beginTransaction(SPISettings(12000000, MSBFIRST, SPI_MODE0));
   //noInterrupts();
 	OLED_CS_Clr();
   SPI.transfer(dat);
@@ -34,7 +34,7 @@ void spi_config(void)
   //SPI.setFrequency(10000000);
   //SPI.setBitOrder(MSBFIRST);
   SPI.begin();
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE1));
+  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
   SPI.endTransaction();
 }
 
