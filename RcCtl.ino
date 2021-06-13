@@ -9,6 +9,7 @@
 #endif //__ADS
 #include "debug.h"
 #include "lcd.h"
+#include "wifi.h"
 
 #ifdef __ADS
 Adafruit_ADS1015 ads;
@@ -35,6 +36,8 @@ void setup()
   Lcd_Init();
   LCD_Clear(LCD_BLUE);
   BACK_COLOR=LCD_BLUE;
+  delay(100);
+  WifiInit();
   delay(1000);
   // auto calibrate centre
 #ifdef __ADS
@@ -44,69 +47,91 @@ void setup()
 }
 
 unsigned long tlast = 0;
+int16_t adc[3] = { 0, 0, 0 };
+int16_t ladc[3] = { 0, 0, 0 };
 
-void loop() 
+void readADCs()
 {
-  unsigned long tnow;
 #ifdef __ADS
-  int16_t adc0=0,adc1=0,adc2=0;
-  float bat;
+  int x = 0;
 
-  adc0 = ads.readADC_SingleEnded(0);
-  adc1 = ads.readADC_SingleEnded(1);
-  adc2 = ads.readADC_SingleEnded(2);
-  bat = ads.computeVolts(adc2) * 2.0;
-  if (adc0 < h_min)
+  for(x = 0; x < 3; x++)
   {
-    h_min = adc0;
+    adc[x] = ads.readADC_SingleEnded(x);
   }
-  if (adc0 > h_max)
+  if (adc[0] < h_min)
   {
-    h_max = adc0;
+    h_min = adc[0];
   }
-  if (adc1 < v_min)
+  if (adc[0] > h_max)
   {
-    v_min = adc1;
+    h_max = adc[0];
   }
-  if (adc1 > v_max)
+  if (adc[1] < v_min)
   {
-    v_max = adc1;
+    v_min = adc[1];
+  }
+  if (adc[1] > v_max)
+  {
+    v_max = adc[1];
   }
 #endif
-  tnow = millis();
-  if ((tnow - tlast) > 1000)
+}
+
+void showADCs()
+{
+  if ((adc[0] != ladc[0]) || (adc[1] != ladc[1]) || (adc[2] != ladc[2]))
   {
-#ifdef __ADS
     int8_t h_perc = 0;
     int8_t v_perc = 0;
-    
-    tlast = tnow;
-    //dbgPrintf("H:%x V:%x Bat:%0.3fV\n", adc0, adc1, bat);
-    LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc0, adc1);
+    float bat;
+    int x = 0;
+
+    for(x = 0; x < 3; x++)
+    {
+      ladc[x] = adc[x];
+    }
+    bat = ads.computeVolts(adc[2]) * 2.0;
+    LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
     
     // turn adc values into percentage for H & V
-    if (adc0 < h_mid)
+    if (adc[0] < h_mid)
     {
-      h_perc = (adc0 - h_min) * 100 / (h_mid - h_min); 
+      h_perc = (adc[0] - h_min) * 100 / (h_mid - h_min); 
       h_perc = 100 - h_perc;
     }
     else
     {
-      h_perc = (adc0 - h_mid) * -100 / (h_max - h_mid); 
+      h_perc = (adc[0] - h_mid) * -100 / (h_max - h_mid); 
     }
-    if (adc1 < v_mid)
+    if (adc[1] < v_mid)
     {
-      v_perc = (adc1 - v_min) * 100 / (v_mid - v_min); 
+      v_perc = (adc[1] - v_min) * 100 / (v_mid - v_min); 
       v_perc = 100 - v_perc;
     }
     else
     {
-      v_perc = (adc1 - v_mid) * -100 / (v_max - v_mid); 
+      v_perc = (adc[1] - v_mid) * -100 / (v_max - v_mid); 
     }
-    dbgPrintf("H:%3x(%+3d) V:%3x(%+3d) Bat:%0.3fV\n", adc0, h_perc, adc1, v_perc, bat);
+    dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], h_perc, adc[1], v_perc, bat);
     LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", h_perc, v_perc);
-    
+      
     LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
+  }
+}
+
+void loop() 
+{
+  unsigned long tnow;
+
+  WifiProcess();
+  readADCs();
+  tnow = millis();
+  if ((tnow - tlast) > 1000)
+  {
+    tlast = tnow;
+#ifdef __ADS
+    showADCs();
 #else //__ADS
     tlast = tnow;
     dbgPrintf("Count %d\n", Count);
@@ -116,7 +141,6 @@ void loop()
     {
       Count = 0;
     }
-    
 #endif //__ADS
   }
 }

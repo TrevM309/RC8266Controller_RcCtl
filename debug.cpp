@@ -7,9 +7,10 @@
 void dbgInit(void)
 {
   Serial.begin(115200,SERIAL_8N1);
-  Serial.setDebugOutput(true);
-  delay(100);
-  TRACE(("\n\nTrace Started\n"));
+  Serial.setDebugOutput(1);
+  Serial.setDebugOutput(0);
+  delay(2000);
+  dbgPrintf("\n\nTrace Started\n");
 }
 
 void dbgPrintf(char* fmt, ...)
