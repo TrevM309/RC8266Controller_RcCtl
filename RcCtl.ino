@@ -117,6 +117,7 @@ void showADCs()
     LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", h_perc, v_perc);
       
     LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
+    WifiSend(h_perc, v_perc);
   }
 }
 

@@ -1,38 +1,68 @@
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
-#include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
 #include "debug.h"
 #include "wifi.h"
 
-#define APSSID "RcCtrl1"
-#define APPSK  "thereisnospoon"
-const char *ssid = APSSID;
-const char *password = APPSK;
+const char *ssid     = "RcCtrl1";
+const char *password = "password1234567";
 
-ESP8266WebServer server(80);
-
-// Local functions
-void handleRoot() ;
+// UDP
+WiFiUDP UDP;
+IPAddress server(192,168,4,15);     // IP address of the AP
+#define UDP_PORT 4210
 
 void WifiInit(void)
 {
-  dbgPrintf("\nConfiguring access point...\n");
-  WiFi.softAP(ssid, password);
-  IPAddress myIP = WiFi.softAPIP();
-  dbgPrintf("AP IP address: %d.%d.%d.%d\n",myIP[0],myIP[1],myIP[2],myIP[3]);
-  //Serial.println(myIP);  
-  server.on("/", handleRoot);
-  server.begin();
-  dbgPrintf("HTTP server started\n");
+  // We start by connecting to a WiFi network
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  Serial.println();
+  Serial.print("Wait for WiFi... ");
+
+  while (WiFi.status() != WL_CONNECTED) 
+  {
+    Serial.print(".");
+    delay(500);
+  }
+
+  Serial.println("");
+  Serial.println("Connected");
+  Serial.print("LocalIP:"); 
+  Serial.println(WiFi.localIP());
+  Serial.println("MAC:" + WiFi.macAddress());
+  Serial.print("Gateway:"); 
+  Serial.println(WiFi.gatewayIP());
+  Serial.print("AP MAC:"); 
+  Serial.println(WiFi.BSSIDstr());
+
+  // Begin UDP port
+  UDP.begin(UDP_PORT);
+  Serial.print("Opening UDP port ");
+  Serial.println(UDP_PORT);
 }
+
+void WifiSend(U8 h_perc, U8 v_perc)
+{
+  // Send Packet
+  UDP.beginPacket(server, UDP_PORT);
+  UDP.write(h_perc);
+  UDP.write(v_perc);
+  UDP.endPacket();
+  
+  /*
+  client.connect(server, 80);
+  Serial.println("********************************");
+  Serial.print("Byte sent to the AP: ");
+  Serial.println(client.print("Anyo\r"));
+  String answer = client.readStringUntil('\r');
+  Serial.println("From the AP: " + answer);
+  client.flush();
+  client.stop();
+  */
+}
+
 
 void WifiProcess()
 {
-  server.handleClient();
-}
-
-void handleRoot() 
-{
-  dbgPrintf("Root Accessed\n");
-  server.send(200, "text/html", "<h1>You are connected</h1>");
 }
