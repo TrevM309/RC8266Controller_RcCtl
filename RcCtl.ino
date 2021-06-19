@@ -18,6 +18,14 @@ int16_t v_min = 10;
 int16_t v_mid = 0x17f;
 int16_t v_max = 0x455-10;
 
+unsigned long tlast = 0;
+int16_t adc[3] = { 0, 0, 0 };
+int16_t ladc[3] = { 0, 0, 0 };
+int8_t h_perc = 0;
+int8_t v_perc = 0;
+float bat;
+
+// local funcs
 void sendADCs();
 void readADCs();
 void showADCs();
@@ -37,13 +45,6 @@ void setup()
   h_mid = ads.readADC_SingleEnded(0);
   v_mid = ads.readADC_SingleEnded(1);
 }
-
-unsigned long tlast = 0;
-int16_t adc[3] = { 0, 0, 0 };
-int16_t ladc[3] = { 0, 0, 0 };
-int8_t h_perc = 0;
-int8_t v_perc = 0;
-float bat;
 
 void readADCs()
 {
