@@ -26,6 +26,10 @@ int16_t v_max = 0x455-10;
 int Count = 0;
 #endif //__ADS
 
+void sendADCs();
+void readADCs();
+void showADCs();
+
 void setup() 
 {
   dbgInit();
@@ -49,6 +53,9 @@ void setup()
 unsigned long tlast = 0;
 int16_t adc[3] = { 0, 0, 0 };
 int16_t ladc[3] = { 0, 0, 0 };
+int8_t h_perc = 0;
+int8_t v_perc = 0;
+float bat;
 
 void readADCs()
 {
@@ -78,13 +85,10 @@ void readADCs()
 #endif
 }
 
-void showADCs()
+void sendADCs()
 {
   if ((adc[0] != ladc[0]) || (adc[1] != ladc[1]) || (adc[2] != ladc[2]))
   {
-    int8_t h_perc = 0;
-    int8_t v_perc = 0;
-    float bat;
     int x = 0;
 
     for(x = 0; x < 3; x++)
@@ -92,7 +96,6 @@ void showADCs()
       ladc[x] = adc[x];
     }
     bat = ads.computeVolts(adc[2]) * 2.0;
-    LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
     
     // turn adc values into percentage for H & V
     if (adc[0] < h_mid)
@@ -113,12 +116,16 @@ void showADCs()
     {
       v_perc = (adc[1] - v_mid) * -100 / (v_max - v_mid); 
     }
-    dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], h_perc, adc[1], v_perc, bat);
-    LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", h_perc, v_perc);
-      
-    LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
     WifiSend(h_perc, v_perc);
   }
+}
+
+void showADCs()
+{
+  LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
+  dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], h_perc, adc[1], v_perc, bat);
+  LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", h_perc, v_perc);
+  LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
 }
 
 void loop() 
@@ -127,6 +134,7 @@ void loop()
 
   WifiProcess();
   readADCs();
+  sendADCs();
   tnow = millis();
   if ((tnow - tlast) > 1000)
   {
