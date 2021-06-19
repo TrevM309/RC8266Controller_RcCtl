@@ -18,7 +18,7 @@ enum
 #define NUMCH   2
 #define NUMADC  3
 
-unsigned long tlast = 0;
+unsigned long tlast  = 0;
 int16_t adc[NUMADC]  = { 0, 0, 0 };
 int16_t ladc[NUMADC] = { 0, 0, 0 };
 
@@ -26,8 +26,8 @@ int16_t ladc[NUMADC] = { 0, 0, 0 };
 int16_t Amin[NUMCH] = { 10, 10 };
 int16_t Amid[NUMCH] = { 0x193, 0x17f };
 int16_t Amax[NUMCH] = { 0x456-10, 0x455-10 };
-int8_t perc[NUMCH] = { 0, 0 };
-float bat = 0.0;
+int8_t perc[NUMCH]  = { 0, 0 };
+float bat           = 0.0;
 
 // local funcs
 void sendADCs();
@@ -74,27 +74,22 @@ void loop()
 // read ADCs and auto adjust min & max
 void readADCs()
 {
-  int x = 0;
+  int8_t x = 0;
 
-  for(x = 0; x < 3; x++)
+  for(x = 0; x < NUMADC; x++)
   {
     adc[x] = ads.readADC_SingleEnded(x);
   }
-  if (adc[0] < Amin[0])
+  for (x = 0; x < NUMCH; x++)
   {
-    Amin[0] = adc[0];
-  }
-  if (adc[0] > Amax[0])
-  {
-    Amax[0] = adc[0];
-  }
-  if (adc[1] < Amin[1])
-  {
-    Amin[1] = adc[1];
-  }
-  if (adc[1] > Amax[1])
-  {
-    Amax[1] = adc[1];
+    if (adc[x] < Amin[x])
+    {
+      Amin[x] = adc[x];
+    }
+    if (adc[x] > Amax[x])
+    {
+      Amax[x] = adc[x];
+    }
   }
 }
 
@@ -103,32 +98,28 @@ void sendADCs()
 {
   if ((adc[0] != ladc[0]) || (adc[1] != ladc[1]) || (adc[2] != ladc[2]))
   {
-    int x = 0;
+    int8_t x = 0;
 
-    for(x = 0; x < 3; x++)
+    for (x = 0; x < NUMADC; x++)
     {
       ladc[x] = adc[x];
     }
+
+    // calc battery voltage
     bat = ads.computeVolts(adc[2]) * 2.0;
     
     // turn adc values into percentage for H & V
-    if (adc[0] < Amid[0])
+    for (x = 0; x < NUMCH; x++)
     {
-      perc[0] = (adc[0] - Amin[0]) * 100 / (Amid[0] - Amin[0]); 
-      perc[0] = 100 - perc[0];
-    }
-    else
-    {
-      perc[0] = (adc[0] - Amid[0]) * -100 / (Amax[0] - Amid[0]); 
-    }
-    if (adc[1] < Amid[1])
-    {
-      perc[1] = (adc[1] - Amin[1]) * 100 / (Amid[1] - Amin[1]); 
-      perc[1] = 100 - perc[1];
-    }
-    else
-    {
-      perc[1] = (adc[1] - Amid[1]) * -100 / (Amax[1] - Amid[1]); 
+      if (adc[x] < Amid[x])
+      {
+        perc[x] = (adc[x] - Amin[x]) * 100 / (Amid[x] - Amin[x]); 
+        perc[x] = 100 - perc[x];
+      }
+      else
+      {
+        perc[x] = (adc[x] - Amid[x]) * -100 / (Amax[x] - Amid[x]); 
+      }
     }
     WifiSend(perc[HORIZ], perc[VERT]);
   }
