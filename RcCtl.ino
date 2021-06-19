@@ -27,6 +27,7 @@ int16_t Amin[NUMCH] = { 10, 10 };
 int16_t Amid[NUMCH] = { 0x193, 0x17f };
 int16_t Amax[NUMCH] = { 0x456-10, 0x455-10 };
 int8_t perc[NUMCH]  = { 0, 0 };
+int8_t lperc[NUMCH] = { 100, 100 };
 float bat           = 0.0;
 
 // local funcs
@@ -121,7 +122,12 @@ void sendADCs()
         perc[x] = (adc[x] - Amid[x]) * -100 / (Amax[x] - Amid[x]); 
       }
     }
-    WifiSend(perc[HORIZ], perc[VERT]);
+    if ((perc[HORIZ] != lperc[HORIZ]) || (perc[VERT] != lperc[VERT]))
+    {
+      lperc[HORIZ] = perc[HORIZ];
+      lperc[VERT]  = perc[VERT];
+      WifiSend(perc[HORIZ], perc[VERT]);
+    }
   }
 }
 
