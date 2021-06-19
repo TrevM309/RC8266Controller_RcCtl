@@ -15,6 +15,10 @@ enum
   VERT,
 };
 
+unsigned long tlast = 0;
+int16_t adc[3] = { 0, 0, 0 };
+int16_t ladc[3] = { 0, 0, 0 };
+
 // adc limit values
 int16_t Amin[2] = { 10, 10 };
 int16_t Amid[2] = { 0x193, 0x17f };
@@ -22,15 +26,12 @@ int16_t Amax[2] = { 0x456-10, 0x455-10 };
 int8_t perc[2] = { 0, 0 };
 float bat = 0.0;
 
-unsigned long tlast = 0;
-int16_t adc[3] = { 0, 0, 0 };
-int16_t ladc[3] = { 0, 0, 0 };
-
 // local funcs
 void sendADCs();
 void readADCs();
 void showADCs();
 
+// standard Arduino setup (initialise everything at power up)
 void setup() 
 {
   dbgInit();
@@ -45,6 +46,22 @@ void setup()
   // auto calibrate centre
   Amid[0] = ads.readADC_SingleEnded(0);
   Amid[1] = ads.readADC_SingleEnded(1);
+}
+
+// standard Arduino loop (Run continuously after setup)
+void loop() 
+{
+  unsigned long tnow;
+
+  WifiProcess();
+  readADCs();
+  sendADCs();
+  tnow = millis();
+  if ((tnow - tlast) > 1000)
+  {
+    tlast = tnow;
+    showADCs();
+  }
 }
 
 void readADCs()
@@ -114,19 +131,4 @@ void showADCs()
   dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], perc[0], adc[1], perc[1], bat);
   LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", perc[0], perc[1]);
   LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
-}
-
-void loop() 
-{
-  unsigned long tnow;
-
-  WifiProcess();
-  readADCs();
-  sendADCs();
-  tnow = millis();
-  if ((tnow - tlast) > 1000)
-  {
-    tlast = tnow;
-    showADCs();
-  }
 }
