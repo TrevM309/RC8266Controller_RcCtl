@@ -15,15 +15,18 @@ enum
   VERT,
 };
 
+#define NUMCH   2
+#define NUMADC  3
+
 unsigned long tlast = 0;
-int16_t adc[3] = { 0, 0, 0 };
-int16_t ladc[3] = { 0, 0, 0 };
+int16_t adc[NUMADC]  = { 0, 0, 0 };
+int16_t ladc[NUMADC] = { 0, 0, 0 };
 
 // adc limit values
-int16_t Amin[2] = { 10, 10 };
-int16_t Amid[2] = { 0x193, 0x17f };
-int16_t Amax[2] = { 0x456-10, 0x455-10 };
-int8_t perc[2] = { 0, 0 };
+int16_t Amin[NUMCH] = { 10, 10 };
+int16_t Amid[NUMCH] = { 0x193, 0x17f };
+int16_t Amax[NUMCH] = { 0x456-10, 0x455-10 };
+int8_t perc[NUMCH] = { 0, 0 };
 float bat = 0.0;
 
 // local funcs
@@ -34,6 +37,8 @@ void showADCs();
 // standard Arduino setup (initialise everything at power up)
 void setup() 
 {
+  int8_t x;
+  
   dbgInit();
   Wire.begin(5,4);
   ads.begin();
@@ -44,8 +49,10 @@ void setup()
   WifiInit();
   delay(1000);
   // auto calibrate centre
-  Amid[0] = ads.readADC_SingleEnded(0);
-  Amid[1] = ads.readADC_SingleEnded(1);
+  for (x = 0; x < NUMCH; x++)
+  {
+    Amid[x] = ads.readADC_SingleEnded(x);
+  }
 }
 
 // standard Arduino loop (Run continuously after setup)
