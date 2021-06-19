@@ -9,21 +9,22 @@
 
 Adafruit_ADS1015 ads;
 
-// adc values
-int16_t h_min = 10;
-int16_t h_mid = 0x193;
-int16_t h_max = 0x456-10;
-//
-int16_t v_min = 10;
-int16_t v_mid = 0x17f;
-int16_t v_max = 0x455-10;
+enum
+{
+  HORIZ = 0,
+  VERT,
+};
+
+// adc limit values
+int16_t Amin[2] = { 10, 10 };
+int16_t Amid[2] = { 0x193, 0x17f };
+int16_t Amax[2] = { 0x456-10, 0x455-10 };
+int8_t perc[2] = { 0, 0 };
+float bat = 0.0;
 
 unsigned long tlast = 0;
 int16_t adc[3] = { 0, 0, 0 };
 int16_t ladc[3] = { 0, 0, 0 };
-int8_t h_perc = 0;
-int8_t v_perc = 0;
-float bat;
 
 // local funcs
 void sendADCs();
@@ -42,8 +43,8 @@ void setup()
   WifiInit();
   delay(1000);
   // auto calibrate centre
-  h_mid = ads.readADC_SingleEnded(0);
-  v_mid = ads.readADC_SingleEnded(1);
+  Amid[0] = ads.readADC_SingleEnded(0);
+  Amid[1] = ads.readADC_SingleEnded(1);
 }
 
 void readADCs()
@@ -54,21 +55,21 @@ void readADCs()
   {
     adc[x] = ads.readADC_SingleEnded(x);
   }
-  if (adc[0] < h_min)
+  if (adc[0] < Amin[0])
   {
-    h_min = adc[0];
+    Amin[0] = adc[0];
   }
-  if (adc[0] > h_max)
+  if (adc[0] > Amax[0])
   {
-    h_max = adc[0];
+    Amax[0] = adc[0];
   }
-  if (adc[1] < v_min)
+  if (adc[1] < Amin[1])
   {
-    v_min = adc[1];
+    Amin[1] = adc[1];
   }
-  if (adc[1] > v_max)
+  if (adc[1] > Amax[1])
   {
-    v_max = adc[1];
+    Amax[1] = adc[1];
   }
 }
 
@@ -85,33 +86,33 @@ void sendADCs()
     bat = ads.computeVolts(adc[2]) * 2.0;
     
     // turn adc values into percentage for H & V
-    if (adc[0] < h_mid)
+    if (adc[0] < Amid[0])
     {
-      h_perc = (adc[0] - h_min) * 100 / (h_mid - h_min); 
-      h_perc = 100 - h_perc;
+      perc[0] = (adc[0] - Amin[0]) * 100 / (Amid[0] - Amin[0]); 
+      perc[0] = 100 - perc[0];
     }
     else
     {
-      h_perc = (adc[0] - h_mid) * -100 / (h_max - h_mid); 
+      perc[0] = (adc[0] - Amid[0]) * -100 / (Amax[0] - Amid[0]); 
     }
-    if (adc[1] < v_mid)
+    if (adc[1] < Amid[1])
     {
-      v_perc = (adc[1] - v_min) * 100 / (v_mid - v_min); 
-      v_perc = 100 - v_perc;
+      perc[1] = (adc[1] - Amin[1]) * 100 / (Amid[1] - Amin[1]); 
+      perc[1] = 100 - perc[1];
     }
     else
     {
-      v_perc = (adc[1] - v_mid) * -100 / (v_max - v_mid); 
+      perc[1] = (adc[1] - Amid[1]) * -100 / (Amax[1] - Amid[1]); 
     }
-    WifiSend(h_perc, v_perc);
+    WifiSend(perc[HORIZ], perc[VERT]);
   }
 }
 
 void showADCs()
 {
   LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
-  dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], h_perc, adc[1], v_perc, bat);
-  LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", h_perc, v_perc);
+  dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], perc[0], adc[1], perc[1], bat);
+  LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", perc[0], perc[1]);
   LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
 }
 
