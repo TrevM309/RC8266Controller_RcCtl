@@ -64,6 +64,7 @@ void loop()
   }
 }
 
+// read ADCs and auto adjust min & max
 void readADCs()
 {
   int x = 0;
@@ -90,6 +91,7 @@ void readADCs()
   }
 }
 
+// calculate percentages and send to device
 void sendADCs()
 {
   if ((adc[0] != ladc[0]) || (adc[1] != ladc[1]) || (adc[2] != ladc[2]))
@@ -125,6 +127,7 @@ void sendADCs()
   }
 }
 
+// Display ADCs
 void showADCs()
 {
   LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
