@@ -1,17 +1,12 @@
 // TrevM 14/05/2021
 // Main file for ESP-M2 Remote Control Transmitter
 
-#define __ADS
-
-#ifdef __ADS
 #include <Adafruit_ADS1X15.h>
 #include <Wire.h>
-#endif //__ADS
 #include "debug.h"
 #include "lcd.h"
 #include "wifi.h"
 
-#ifdef __ADS
 Adafruit_ADS1015 ads;
 
 // adc values
@@ -22,9 +17,6 @@ int16_t h_max = 0x456-10;
 int16_t v_min = 10;
 int16_t v_mid = 0x17f;
 int16_t v_max = 0x455-10;
-#else //__ADS
-int Count = 0;
-#endif //__ADS
 
 void sendADCs();
 void readADCs();
@@ -33,10 +25,8 @@ void showADCs();
 void setup() 
 {
   dbgInit();
-#ifdef __ADS
   Wire.begin(5,4);
   ads.begin();
-#endif
   Lcd_Init();
   LCD_Clear(LCD_BLUE);
   BACK_COLOR=LCD_BLUE;
@@ -44,10 +34,8 @@ void setup()
   WifiInit();
   delay(1000);
   // auto calibrate centre
-#ifdef __ADS
   h_mid = ads.readADC_SingleEnded(0);
   v_mid = ads.readADC_SingleEnded(1);
-#endif
 }
 
 unsigned long tlast = 0;
@@ -59,7 +47,6 @@ float bat;
 
 void readADCs()
 {
-#ifdef __ADS
   int x = 0;
 
   for(x = 0; x < 3; x++)
@@ -82,7 +69,6 @@ void readADCs()
   {
     v_max = adc[1];
   }
-#endif
 }
 
 void sendADCs()
@@ -139,17 +125,6 @@ void loop()
   if ((tnow - tlast) > 1000)
   {
     tlast = tnow;
-#ifdef __ADS
     showADCs();
-#else //__ADS
-    tlast = tnow;
-    dbgPrintf("Count %d\n", Count);
-    LCD_Printf(0, 16, LCD_WHITE,1, "Count %d ", Count);
-    Count++;
-    if (Count > 50)
-    {
-      Count = 0;
-    }
-#endif //__ADS
   }
 }
