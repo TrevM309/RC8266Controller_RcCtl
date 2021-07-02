@@ -50,9 +50,11 @@ void setup()
   Lcd_Init();
   LCD_Clear(LCD_BLUE);
   BACK_COLOR=LCD_BLUE;
-  delay(100);
+  LCD_Printf(20, 16, LCD_WHITE, 2, "Moseley");
+  //delay(100);
   WifiInit();
   delay(1000);
+  LCD_Clear(LCD_BLUE);
   // auto calibrate centre
   for (x = 0; x < NUMCH; x++)
   {
