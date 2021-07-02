@@ -169,8 +169,10 @@ void sendADCs()
 void showADCs()
 {
   float dV = (float)DevVolts() / 100.0;
-  dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], perc[0], adc[1], perc[1], bat);
-  LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", perc[0], perc[1]);
-  LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.2fV  ", bat);
-  LCD_Printf(0, 48, LCD_WHITE,1, "Dev:%0.2fV  ", dV);
+  long rssi = WifiDb();
+  dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.2fV Dev:%0.2fV RSSI:%ddBm\n", adc[0], perc[0], adc[1], perc[1], bat, dV,rssi);
+  LCD_Printf(10,  0, LCD_WHITE, 1, "H:%3d V:%3d   ", perc[0], perc[1]);
+  LCD_Printf(10, 16, LCD_WHITE, 1, "Bat:%0.2fV  ", bat);
+  LCD_Printf(10, 32, LCD_WHITE, 1, "Dev:%0.2fV  ", dV);
+  LCD_Printf(10, 48, LCD_WHITE, 1, "RSSI:%ddBm  ",rssi);
 }

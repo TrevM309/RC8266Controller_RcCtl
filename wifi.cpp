@@ -65,6 +65,11 @@ uint16_t DevVolts(void)
   return Vbat;
 }
 
+long WifiDb(void)
+{
+  return WiFi.RSSI();
+}
+
 void WifiProcess()
 {
   int len;
