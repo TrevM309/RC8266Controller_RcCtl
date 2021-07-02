@@ -3,13 +3,18 @@
 #include "debug.h"
 #include "wifi.h"
 
+#define UDP_TX_PORT 4210
+#define UDP_RX_PORT 4211
 const char *ssid     = "RcCtrl2";
 const char *password = "password1234567";
 
 // UDP
-WiFiUDP UDP;
+WiFiUDP UDPTX;
+WiFiUDP UDPRX;
 IPAddress server(192,168,4,15);     // IP address of the AP
-#define UDP_PORT 4210
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+
+uint16_t Vbat = 0;
 
 void WifiInit(void)
 {
@@ -37,32 +42,39 @@ void WifiInit(void)
   Serial.println(WiFi.BSSIDstr());
 
   // Begin UDP port
-  UDP.begin(UDP_PORT);
+  UDPTX.begin(UDP_TX_PORT);
   Serial.print("Opening UDP port ");
-  Serial.println(UDP_PORT);
+  Serial.println(UDP_TX_PORT);
+  // Begin UDP port
+  UDPRX.begin(UDP_RX_PORT);
+  Serial.print("Opening UDP port ");
+  Serial.println(UDP_RX_PORT);
 }
 
 void WifiSend(U8 h_perc, U8 v_perc)
 {
   // Send Packet
-  UDP.beginPacket(server, UDP_PORT);
-  UDP.write(h_perc);
-  UDP.write(v_perc);
-  UDP.endPacket();
-  
-  /*
-  client.connect(server, 80);
-  Serial.println("********************************");
-  Serial.print("Byte sent to the AP: ");
-  Serial.println(client.print("Anyo\r"));
-  String answer = client.readStringUntil('\r');
-  Serial.println("From the AP: " + answer);
-  client.flush();
-  client.stop();
-  */
+  UDPTX.beginPacket(server, UDP_TX_PORT);
+  UDPTX.write(h_perc);
+  UDPTX.write(v_perc);
+  UDPTX.endPacket();
 }
 
+uint16_t DevVolts(void)
+{
+  return Vbat;
+}
 
 void WifiProcess()
 {
+  int len;
+
+  // Receive packet
+  len = UDPRX.parsePacket();
+  if (len > 0)
+  {
+    UDPRX.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+    Vbat = (packetBuffer[0] << 8) | packetBuffer[1];
+    dbgPrintf("Device Vbat:%d\n",Vbat);
+  }
 }

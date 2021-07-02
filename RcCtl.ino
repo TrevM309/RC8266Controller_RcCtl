@@ -168,8 +168,9 @@ void sendADCs()
 // Display ADCs
 void showADCs()
 {
-  //LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
+  float dV = (float)DevVolts() / 100.0;
   dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], perc[0], adc[1], perc[1], bat);
   LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", perc[0], perc[1]);
-  LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
+  LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.2fV  ", bat);
+  LCD_Printf(0, 48, LCD_WHITE,1, "Dev:%0.2fV  ", dV);
 }
