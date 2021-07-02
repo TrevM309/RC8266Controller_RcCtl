@@ -3,7 +3,7 @@
 #include "debug.h"
 #include "wifi.h"
 
-const char *ssid     = "RcCtrl1";
+const char *ssid     = "RcCtrl2";
 const char *password = "password1234567";
 
 // UDP
