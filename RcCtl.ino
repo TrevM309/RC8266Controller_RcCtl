@@ -20,11 +20,12 @@ enum
 #define NUMAVG  20
 #define MINDIF  5
 
-unsigned long tlast  = 0;
-int16_t adc[NUMADC]  = { 0, 0, 0 };
-int32_t SumAdc[NUMADC] = { 0, 0, 0 };
-int8_t NumAdc = 0;
-int16_t ladc[NUMADC] = { 0, 0, 0 };
+unsigned long tlast  = 0;               // last time values shown (millis)
+int16_t adc[NUMADC]  = { 0, 0, 0 };     // average adc values
+int32_t SumAdc[NUMADC] = { 0, 0, 0 };   // average sums
+int8_t NumAdc = 0;                      // how many readings in sum
+int16_t ladc[NUMADC] = { 0, 0, 0 };     // last adc value sent
+int16_t dadc[NUMADC] = { 0, 0, 0 };     // last adc value displayed
 
 // adc limit values
 int16_t Amin[NUMCH] = { 10, 10 };
@@ -167,7 +168,7 @@ void sendADCs()
 // Display ADCs
 void showADCs()
 {
-  LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
+  //LCD_Printf(0, 0, LCD_WHITE,1, "H:%x V:%x   ", adc[0], adc[1]);
   dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.3fV\n", adc[0], perc[0], adc[1], perc[1], bat);
   LCD_Printf(0, 16, LCD_WHITE,1, "H:%3d V:%3d   ", perc[0], perc[1]);
   LCD_Printf(0, 32, LCD_WHITE,1, "Bat:%0.3fV  ", bat);
