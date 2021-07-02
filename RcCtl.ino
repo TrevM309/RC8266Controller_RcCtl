@@ -17,9 +17,13 @@ enum
 
 #define NUMCH   2
 #define NUMADC  3
+#define NUMAVG  20
+#define MINDIF  5
 
 unsigned long tlast  = 0;
 int16_t adc[NUMADC]  = { 0, 0, 0 };
+int32_t SumAdc[NUMADC] = { 0, 0, 0 };
+int8_t NumAdc = 0;
 int16_t ladc[NUMADC] = { 0, 0, 0 };
 
 // adc limit values
@@ -77,19 +81,30 @@ void readADCs()
 {
   int8_t x = 0;
 
+  // add adcs to sums
   for(x = 0; x < NUMADC; x++)
   {
-    adc[x] = ads.readADC_SingleEnded(x);
+    SumAdc[x] += ads.readADC_SingleEnded(x);
   }
-  for (x = 0; x < NUMCH; x++)
+  NumAdc++;
+  if (NumAdc >= NUMAVG)
   {
-    if (adc[x] < Amin[x])
+    NumAdc = 0;
+    for(x = 0; x < NUMADC; x++)
     {
-      Amin[x] = adc[x];
+      adc[x] = SumAdc[x] / NUMAVG;
+      SumAdc[x] = 0;
     }
-    if (adc[x] > Amax[x])
+    for (x = 0; x < NUMCH; x++)
     {
-      Amax[x] = adc[x];
+      if (adc[x] < Amin[x])
+      {
+        Amin[x] = adc[x];
+      }
+      if (adc[x] > Amax[x])
+      {
+        Amax[x] = adc[x];
+      }
     }
   }
 }
@@ -97,7 +112,22 @@ void readADCs()
 // calculate percentages and send to device
 void sendADCs()
 {
-  if ((adc[0] != ladc[0]) || (adc[1] != ladc[1]) || (adc[2] != ladc[2]))
+  int8_t x = 0;
+  int8_t v = 0;
+  uint16_t diff[3];
+
+  for (x = 0; x < NUMADC; x++)
+  {
+    if (adc[x] > ladc[x])
+      diff[x] = adc[x] - ladc[x];
+    else
+      diff[x] = ladc[x] - adc[x];
+    if (diff[x] < MINDIF)
+      diff[x] = 0;
+    if (diff[x] > 0)
+      v = 1;
+  }
+  if (v != 0)
   {
     int8_t x = 0;
 
