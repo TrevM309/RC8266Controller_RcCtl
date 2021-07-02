@@ -20,6 +20,10 @@ enum
 #define NUMAVG  20
 #define MINDIF  5
 
+#define LIPOMAX   4.2
+#define LIPOSTORE 3.8
+#define LIPOMIN   3.6
+
 unsigned long tlast  = 0;               // last time values shown (millis)
 int16_t adc[NUMADC]  = { 0, 0, 0 };     // average adc values
 int32_t SumAdc[NUMADC] = { 0, 0, 0 };   // average sums
@@ -39,6 +43,7 @@ float bat           = 0.0;
 void sendADCs();
 void readADCs();
 void showADCs();
+void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float Vnow);
 
 // standard Arduino setup (initialise everything at power up)
 void setup() 
@@ -171,8 +176,45 @@ void showADCs()
   float dV = (float)DevVolts() / 100.0;
   long rssi = WifiDb();
   dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.2fV Dev:%0.2fV RSSI:%ddBm\n", adc[0], perc[0], adc[1], perc[1], bat, dV,rssi);
-  LCD_Printf(10,  0, LCD_WHITE, 1, "H:%3d V:%3d   ", perc[0], perc[1]);
-  LCD_Printf(10, 16, LCD_WHITE, 1, "Bat:%0.2fV  ", bat);
-  LCD_Printf(10, 32, LCD_WHITE, 1, "Dev:%0.2fV  ", dV);
-  LCD_Printf(10, 48, LCD_WHITE, 1, "RSSI:%ddBm  ",rssi);
+  //LCD_Printf(10,  0, LCD_WHITE, 1, "H:%3d V:%3d   ", perc[0], perc[1]);
+  //LCD_Printf(10, 16, LCD_WHITE, 1, "Bat:%0.2fV  ", bat);
+  //LCD_Printf(10, 32, LCD_WHITE, 1, "Dev:%0.2fV  ", dV);
+  //LCD_Printf(10, 48, LCD_WHITE, 1, "RSSI:%ddBm  ",rssi);
+  showBat(0,2,(LIPOMAX*2),(LIPOSTORE*2),(LIPOMIN*2),dV);
+  showBat(0,42,LIPOMAX,LIPOSTORE,LIPOMIN,bat);
+}
+
+void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float Vnow)
+{
+  uint32_t pos;
+  uint32_t vmx = (uint32_t)(Vmax * 100.0);
+  uint32_t vst = (uint32_t)(Vstore * 100.0);
+  uint32_t vmn = (uint32_t)(Vmin * 100.0);
+  uint32_t vnw = (uint32_t)(Vnow * 100.0);
+  
+  // draw symbol
+  LCD_DrawLine(x+5,y,x+100+5,y,LCD_WHITE);            // top line
+  LCD_DrawLine(x+5,y+32,x+100+5,y+32,LCD_WHITE);      // bottom line
+  LCD_DrawLine(x+100+5,y,x+100+5,y+32,LCD_WHITE);     // right line
+  LCD_DrawLine(x+5,y,x+5,y+32,LCD_WHITE);             // left line
+  LCD_DrawRectangle(x,y+16-5,x+5,y+16+5,LCD_WHITE);   // left pip
+  // draw level
+  pos = (vnw - vmn) * 100 / (vmx - vmn);
+  //dbgPrintf("%d %d %d %d = %d\n",vmx,vst,vmn,vnw,pos);
+  if (pos <= 100)
+  {
+    u16 col = LCD_RED;
+    if (vnw >= (vmn+10))
+    {
+      col = LCD_YELLOW;
+    }
+    if (vnw > vst)
+    {
+      col = LCD_GREEN;
+    }
+    LCD_Fill(x+5+100-pos,y+1,x+5+99,y+31,col);
+  }
+  //LCD_Fill
+  //void LCD_Fill(u16 xsta,u16 ysta,u16 xend,u16 yend,u16 color);
+  //LCD_Fill(x,y+16-5,x+5,y+16+5,LCD_WHITE);       // left pip
 }
