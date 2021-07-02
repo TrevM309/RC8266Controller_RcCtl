@@ -44,6 +44,7 @@ void sendADCs();
 void readADCs();
 void showADCs();
 void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float Vnow);
+void showSig(uint8_t x, uint8_t y, long rssi);
 
 // standard Arduino setup (initialise everything at power up)
 void setup() 
@@ -182,6 +183,7 @@ void showADCs()
   //LCD_Printf(10, 48, LCD_WHITE, 1, "RSSI:%ddBm  ",rssi);
   showBat(0,2,(LIPOMAX*2),(LIPOSTORE*2),(LIPOMIN*2),dV);
   showBat(0,42,LIPOMAX,LIPOSTORE,LIPOMIN,bat);
+  showSig(112,20,rssi);
 }
 
 void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float Vnow)
@@ -213,8 +215,61 @@ void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float V
       col = LCD_GREEN;
     }
     LCD_Fill(x+5+100-pos,y+1,x+5+99,y+31,col);
+    LCD_Fill(x+6,y+1,x+6+100-pos,y+31,LCD_BLUE);
   }
-  //LCD_Fill
-  //void LCD_Fill(u16 xsta,u16 ysta,u16 xend,u16 yend,u16 color);
-  //LCD_Fill(x,y+16-5,x+5,y+16+5,LCD_WHITE);       // left pip
+}
+
+#define SIGLEN 40
+#define SIGANG 28
+
+void showSig(uint8_t x, uint8_t y, long rssi)
+{
+  float rads;
+  uint8_t sx = x + (SIGLEN/2);
+  uint8_t sy = y + SIGLEN;
+  uint8_t x1,y1,x2,y2;
+  uint8_t slen;
+  uint8_t a;
+
+  // mind limits
+  slen = 1;
+  if (rssi >= -90)
+    slen = SIGLEN / 4;
+  if (rssi >= -80)
+    slen = SIGLEN / 2;
+  if (rssi >= -70)
+    slen = SIGLEN * 3 / 4;
+  if (rssi >= -30)
+    slen = SIGLEN;
+  // draw val
+  for (a = 1; a < SIGANG; a++ )
+  {
+    rads = a * 0.01745329252;
+    x1 = (uint8_t)(sin(rads) * (float)(SIGLEN-1));
+    y1 = (uint8_t)(cos(rads) * (float)(SIGLEN-1));
+    x2 = (uint8_t)(sin(rads) * (float)slen);
+    y2 = (uint8_t)(cos(rads) * (float)slen);
+    LCD_DrawLine(sx-x1,sy-y1,sx,sy,LCD_BLUE);
+    LCD_DrawLine(sx+x1,sy-y1,sx,sy,LCD_BLUE);
+    LCD_DrawLine(sx-x2,sy-y2,sx,sy,LCD_WHITE);
+    LCD_DrawLine(sx+x2,sy-y2,sx,sy,LCD_WHITE);
+  }
+  // draw symbol
+  rads = SIGANG * 0.01745329252;
+  x1 = (uint8_t)(sin(rads) * (float)SIGLEN);
+  y1 = (uint8_t)(cos(rads) * (float)SIGLEN);
+  //dbgPrintf("sx:%d sy:%d x1:%d y1:%d\n",sx,sy,x1,y1);
+  // draw left & right axis
+  LCD_DrawLine(sx-x1,sy-y1,sx,sy,LCD_WHITE);
+  LCD_DrawLine(sx+x1,sy-y1,sx,sy,LCD_WHITE);
+  LCD_DrawPoint(sx,y,LCD_WHITE);
+  // draw arc
+  for (a = 1; a < SIGANG; a++ )
+  {
+    rads = a * 0.01745329252;
+    x1 = (uint8_t)(sin(rads) * (float)SIGLEN);
+    y1 = (uint8_t)(cos(rads) * (float)SIGLEN);
+    LCD_DrawPoint(sx-x1,sy-y1,LCD_WHITE);
+    LCD_DrawPoint(sx+x1,sy-y1,LCD_WHITE);
+  }
 }
