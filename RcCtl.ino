@@ -154,6 +154,7 @@ void sendADCs()
         perc[x] = (adc[x] - Amid[x]) * -100 / (Amax[x] - Amid[x]); 
       }
     }
+    perc[0] = -perc[0];  // invert horiz
     if ((perc[HORIZ] != lperc[HORIZ]) || (perc[VERT] != lperc[VERT]))
     {
       lperc[HORIZ] = perc[HORIZ];
