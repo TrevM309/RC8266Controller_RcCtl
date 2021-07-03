@@ -209,7 +209,9 @@ void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float V
   uint32_t vst = (uint32_t)(Vstore * 100.0);
   uint32_t vmn = (uint32_t)(Vmin * 100.0);
   uint32_t vnw = (uint32_t)(Vnow * 100.0);
-  
+
+  if (vnw > vmx)
+    vnw = vmx;
   // draw symbol
   LCD_DrawLine(x+5,y,x+100+5,y,LCD_WHITE);            // top line
   LCD_DrawLine(x+5,y+32,x+100+5,y+32,LCD_WHITE);      // bottom line
