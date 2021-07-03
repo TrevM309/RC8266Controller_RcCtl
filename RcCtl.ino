@@ -7,8 +7,6 @@
 #include "lcd.h"
 #include "wifi.h"
 
-Adafruit_ADS1015 ads;
-
 enum
 {
   HORIZ = 0,
@@ -24,6 +22,9 @@ enum
 #define LIPOSTORE 3.8
 #define LIPOMIN   3.6
 
+#define SIGLEN 40
+#define SIGANG 28
+
 unsigned long tlast  = 0;               // last time values shown (millis)
 int16_t adc[NUMADC]  = { 0, 0, 0 };     // average adc values
 int32_t SumAdc[NUMADC] = { 0, 0, 0 };   // average sums
@@ -35,9 +36,12 @@ int16_t dadc[NUMADC] = { 0, 0, 0 };     // last adc value displayed
 int16_t Amin[NUMCH] = { 10, 10 };
 int16_t Amid[NUMCH] = { 0x193, 0x17f };
 int16_t Amax[NUMCH] = { 0x456-10, 0x455-10 };
+uint8_t seq = 0;
 int8_t perc[NUMCH]  = { 0, 0 };
 int8_t lperc[NUMCH] = { 100, 100 };
 float bat           = 0.0;
+
+Adafruit_ADS1015 ads;
 
 // local funcs
 void sendADCs();
@@ -177,13 +181,25 @@ void showADCs()
   float dV = (float)DevVolts() / 100.0;
   long rssi = WifiDb();
   dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.2fV Dev:%0.2fV RSSI:%ddBm\n", adc[0], perc[0], adc[1], perc[1], bat, dV,rssi);
-  //LCD_Printf(10,  0, LCD_WHITE, 1, "H:%3d V:%3d   ", perc[0], perc[1]);
-  //LCD_Printf(10, 16, LCD_WHITE, 1, "Bat:%0.2fV  ", bat);
-  //LCD_Printf(10, 32, LCD_WHITE, 1, "Dev:%0.2fV  ", dV);
-  //LCD_Printf(10, 48, LCD_WHITE, 1, "RSSI:%ddBm  ",rssi);
-  showBat(0,2,(LIPOMAX*2),(LIPOSTORE*2),(LIPOMIN*2),dV);
-  showBat(0,42,LIPOMAX,LIPOSTORE,LIPOMIN,bat);
-  showSig(112,20,rssi);
+  switch(seq)
+  {
+    case 0:
+      showSig(112,10,rssi);
+      break;
+    case 1:
+      showBat(0,2,(LIPOMAX*2),(LIPOSTORE*2),(LIPOMIN*2),dV);
+      break;
+    case 2:
+      showBat(0,42,LIPOMAX,LIPOSTORE,LIPOMIN,bat);
+      break;
+    default:
+      break;
+  }
+  seq++;
+  if (seq > 2)
+  {
+    seq = 0;
+  }
 }
 
 void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float Vnow)
@@ -217,10 +233,13 @@ void showBat(uint8_t x, uint8_t y, float Vmax, float Vstore, float Vmin, float V
     LCD_Fill(x+5+100-pos,y+1,x+5+99,y+31,col);
     LCD_Fill(x+6,y+1,x+6+100-pos,y+31,LCD_BLUE);
   }
+  // Add Voltage
+  //void LCD_ShowChar(u16 x,u16 y,u8 num,u8 mode,u16 color,u8 size);
+  LCD_ShowChar(x+40,y+8,'0' + (vnw / 100),1,LCD_BLACK,1);
+  LCD_ShowChar(x+40+8,y+8,'v',1,LCD_BLACK,1);
+  LCD_ShowChar(x+40+16,y+8,'0' + ((vnw % 100)/10),1,LCD_BLACK,1);
+  
 }
-
-#define SIGLEN 40
-#define SIGANG 28
 
 void showSig(uint8_t x, uint8_t y, long rssi)
 {
@@ -242,7 +261,7 @@ void showSig(uint8_t x, uint8_t y, long rssi)
   if (rssi >= -30)
     slen = SIGLEN;
   // draw val
-  for (a = 1; a < SIGANG; a++ )
+  for (a = 1; a < SIGANG; a++)
   {
     rads = a * 0.01745329252;
     x1 = (uint8_t)(sin(rads) * (float)(SIGLEN-1));
@@ -264,7 +283,7 @@ void showSig(uint8_t x, uint8_t y, long rssi)
   LCD_DrawLine(sx+x1,sy-y1,sx,sy,LCD_WHITE);
   LCD_DrawPoint(sx,y,LCD_WHITE);
   // draw arc
-  for (a = 1; a < SIGANG; a++ )
+  for (a = 1; a < SIGANG; a++)
   {
     rads = a * 0.01745329252;
     x1 = (uint8_t)(sin(rads) * (float)SIGLEN);
@@ -272,4 +291,5 @@ void showSig(uint8_t x, uint8_t y, long rssi)
     LCD_DrawPoint(sx-x1,sy-y1,LCD_WHITE);
     LCD_DrawPoint(sx+x1,sy-y1,LCD_WHITE);
   }
+  LCD_Printf(x+8,y+SIGLEN+5,LCD_WHITE,1,"%ld ",rssi);
 }
