@@ -5,7 +5,7 @@
 
 #define UDP_TX_PORT 4210
 #define UDP_RX_PORT 4211
-const char *ssid     = "RcCtrl2";
+const char *ssid     = "RcCtrl3";
 const char *password = "password1234567";
 
 // UDP
@@ -55,7 +55,7 @@ void WifiSend(U8 h_perc, U8 v_perc)
 {
   // Send Packet
   UDPTX.beginPacket(server, UDP_TX_PORT);
-  UDPTX.write(h_perc);
+  UDPTX.write(-h_perc);
   UDPTX.write(v_perc);
   UDPTX.endPacket();
 }
