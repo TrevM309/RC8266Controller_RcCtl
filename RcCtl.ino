@@ -170,7 +170,7 @@ void sendADCs()
     {
       lperc[HORIZ] = perc[HORIZ];
       lperc[VERT]  = perc[VERT];
-      WifiSend(-perc[HORIZ], -perc[VERT]);
+      WifiSend(perc[HORIZ], perc[VERT]);
     }
   }
 }
