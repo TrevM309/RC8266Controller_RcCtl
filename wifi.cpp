@@ -5,7 +5,8 @@
 
 #define UDP_TX_PORT 4210
 #define UDP_RX_PORT 4211
-const char *ssid     = "RcCtrl2";
+// 1 original proto, 2 Tranaller
+const char *ssid     = "RcCtrl3";
 const char *password = "password1234567";
 
 // UDP
@@ -51,12 +52,16 @@ void WifiInit(void)
   Serial.println(UDP_RX_PORT);
 }
 
-void WifiSend(U8 h_perc, U8 v_perc)
+void WifiSend(int8_t* perc, U8 Num)
 {
+  U8 x;
+  
   // Send Packet
   UDPTX.beginPacket(server, UDP_TX_PORT);
-  UDPTX.write(h_perc);
-  UDPTX.write(v_perc);
+  for (x = 0; x < Num; x++)
+  {
+    UDPTX.write(perc[x]);
+  }
   UDPTX.endPacket();
 }
 
@@ -80,6 +85,6 @@ void WifiProcess()
   {
     UDPRX.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
     Vbat = (packetBuffer[0] << 8) | packetBuffer[1];
-    dbgPrintf("Device Vbat:%d\n",Vbat);
+    //dbgPrintf("Device Vbat:%d\n",Vbat);
   }
 }

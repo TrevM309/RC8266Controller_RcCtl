@@ -3,6 +3,7 @@
 
 #include <Adafruit_ADS1X15.h>
 #include <Wire.h>
+#include "common.h"
 #include "debug.h"
 #include "lcd.h"
 #include "wifi.h"
@@ -13,8 +14,18 @@ enum
   VERT,
 };
 
+#ifdef DUAL
+
+#define NUMCH   4
+#define NUMADC  5
+
+#else // DUAL
+
 #define NUMCH   2
 #define NUMADC  3
+
+#endif //DUAL
+
 #define NUMAVG  20
 #define MINDIF  5
 
@@ -25,21 +36,25 @@ enum
 #define SIGLEN 40
 #define SIGANG 28
 
-unsigned long tlast  = 0;               // last time values shown (millis)
-int16_t adc[NUMADC]  = { 0, 0, 0 };     // average adc values
-int32_t SumAdc[NUMADC] = { 0, 0, 0 };   // average sums
-int8_t NumAdc = 0;                      // how many readings in sum
-int16_t ladc[NUMADC] = { 0, 0, 0 };     // last adc value sent
-int16_t dadc[NUMADC] = { 0, 0, 0 };     // last adc value displayed
+#define MINADC 20
+#define MAXADC (0x456 - 40)
+
+unsigned long tlast = 0; // last time values shown (millis)
+// 0=RH 1=RV 2=LH 3=LV
+int16_t adc[NUMADC];     // average adc values
+int32_t SumAdc[NUMADC];  // average sums
+int8_t NumAdc = 0;       // how many readings in sum
+int16_t ladc[NUMADC];    // last adc value sent
+int16_t dadc[NUMADC];    // last adc value displayed
 
 // adc limit values
-int16_t Amin[NUMCH] = { 10, 10 };
-int16_t Amid[NUMCH] = { 0x193, 0x17f };
-int16_t Amax[NUMCH] = { 0x456-10, 0x455-10 };
+int16_t Amin[NUMCH];
+int16_t Amid[NUMCH];
+int16_t Amax[NUMCH];
 uint8_t seq = 0;
-int8_t perc[NUMCH]  = { 0, 0 };
-int8_t lperc[NUMCH] = { 100, 100 };
-float bat           = 0.0;
+int8_t perc[NUMCH];
+int8_t lperc[NUMCH];
+float bat = 0.0;
 
 Adafruit_ADS1015 ads;
 
@@ -66,10 +81,22 @@ void setup()
   WifiInit();
   delay(1000);
   LCD_Clear(LCD_BLUE);
-  // auto calibrate centre
+  // initialise everything
+  for (x = 0; x < NUMADC; x++)
+  {
+    adc[x] = 0;
+    SumAdc[x] = 0;
+    ladc[x] = 0;
+    dadc[x] = 0;
+  }
   for (x = 0; x < NUMCH; x++)
   {
+    // auto calibrate centre
     Amid[x] = ads.readADC_SingleEnded(x);
+    Amin[x] = MINADC;
+    Amax[x] = MAXADC;
+    perc[x] = 0;
+    lperc[x] = 100;
   }
 }
 
@@ -97,7 +124,15 @@ void readADCs()
   // add adcs to sums
   for(x = 0; x < NUMADC; x++)
   {
-    SumAdc[x] += ads.readADC_SingleEnded(x);
+    if (x < 4)
+    {
+      // ADS1015
+      SumAdc[x] += ads.readADC_SingleEnded(x);
+    }
+    else
+    {
+      SumAdc[x] += analogRead(A0);
+    }
   }
   NumAdc++;
   if (NumAdc >= NUMAVG)
@@ -143,6 +178,7 @@ void sendADCs()
   if (v != 0)
   {
     int8_t x = 0;
+    int8_t tx = 0;
 
     for (x = 0; x < NUMADC; x++)
     {
@@ -150,7 +186,11 @@ void sendADCs()
     }
 
     // calc battery voltage
+#ifdef DUAL
+    bat = (1100 * adc[4] / 1023) / 100.0;
+#else //DUAL
     bat = ads.computeVolts(adc[2]) * 2.0;
+#endif //DUAL
     
     // turn adc values into percentage for H & V
     for (x = 0; x < NUMCH; x++)
@@ -165,12 +205,22 @@ void sendADCs()
         perc[x] = (adc[x] - Amid[x]) * -100 / (Amax[x] - Amid[x]); 
       }
     }
+    // inversions
     perc[0] = -perc[0];  // invert horiz
-    if ((perc[HORIZ] != lperc[HORIZ]) || (perc[VERT] != lperc[VERT]))
+    for (x = 0; x < NUMCH; x++)
     {
-      lperc[HORIZ] = perc[HORIZ];
-      lperc[VERT]  = perc[VERT];
-      WifiSend(perc[HORIZ], perc[VERT]);
+      if (perc[x] != lperc[x])
+      {
+        tx++;
+      }
+    }
+    if (tx != 0)
+    {
+      for (x = 0; x < NUMCH; x++)
+      {
+        lperc[x] = perc[x];
+      }
+      WifiSend(perc, NUMCH);
     }
   }
 }
@@ -180,7 +230,13 @@ void showADCs()
 {
   float dV = (float)DevVolts() / 100.0;
   long rssi = WifiDb();
-  dbgPrintf("H:%3x(%+4d) V:%3x(%+4d) Bat:%0.2fV Dev:%0.2fV RSSI:%ddBm\n", adc[0], perc[0], adc[1], perc[1], bat, dV,rssi);
+  U8 x;
+
+  for (x = 0; x < NUMCH; x++)
+  {
+    dbgPrintf("%d:%3x(%+4d) ",x,adc[x],perc[x]);
+  }
+  dbgPrintf("Bat:%0.2fV Dev:%0.2fV RSSI:%ddBm\n", bat, dV,rssi);
   switch(seq)
   {
     case 0:
